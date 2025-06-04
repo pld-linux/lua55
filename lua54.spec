@@ -110,7 +110,7 @@ Statycznie skonsolidowany interpreter lua.
 
 %prep
 %setup -q -n lua-%{version}
-%patch0 -p1
+%patch -P0 -p1
 
 sed -i  -e '/#define LUA_ROOT/s,/usr/local/,%{_prefix}/,' \
 	-e '/#define LUA_CDIR/s,lib/lua/,%{_lib}/lua/,' src/luaconf.h
