@@ -4,7 +4,7 @@
  ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
  ALL_A= $(LUA_A)
  
-+V=5.4
++V=5.5
 +
  # Targets start here.
  default: $(PLAT)

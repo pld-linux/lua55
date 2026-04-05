@@ -1,20 +1,18 @@
 #
 # Conditional build:
-%bcond_with	luastatic	# build dietlibc-based static lua version (broken)
-%bcond_without	default_lua	# build as default lua (symlinks to nil suffix)
+%bcond_with	default_lua	# build as default lua (symlinks to nil suffix)
 #
 Summary:	A simple lightweight powerful embeddable programming language
 Summary(pl.UTF-8):	Prosty, lekki ale potężny, osadzalny język programowania
-Name:		lua54
-Version:	5.4.8
+Name:		lua55
+Version:	5.5.0
 Release:	1
 License:	MIT
 Group:		Development/Languages
 Source0:	https://www.lua.org/ftp/lua-%{version}.tar.gz
-# Source0-md5:	81cf5265b8634967d8a7480d238168ce
+# Source0-md5:	c8b73c52a8c3c80978512f17347ee24d
 Patch0:		link.patch
-URL:		http://www.lua.org/
-%{?with_luastatic:BuildRequires:       dietlibc-static}
+URL:		https://www.lua.org/
 BuildRequires:	readline-devel
 BuildRequires:	sed >= 4.0
 Requires:	%{name}-libs = %{version}-%{release}
@@ -49,15 +47,15 @@ konfiguracji, skryptów i szybkich prototypów.
 Ta wersja ma wkompilowaną obsługę ładowania dynamicznych bibliotek.
 
 %package libs
-Summary:	lua 5.4.x libraries
-Summary(pl.UTF-8):	Biblioteki lua 5.4.x
+Summary:	lua 5.5.x libraries
+Summary(pl.UTF-8):	Biblioteki lua 5.5.x
 Group:		Libraries
 
 %description libs
-lua 5.4.x libraries.
+lua 5.5.x libraries.
 
 %description libs -l pl.UTF-8
-Biblioteki lua 5.4.x.
+Biblioteki lua 5.5.x.
 
 %package devel
 Summary:	Header files for Lua
@@ -93,21 +91,6 @@ Static Lua libraries.
 %description static -l pl.UTF-8
 Biblioteki statyczne Lua.
 
-%package luastatic
-Summary:	Static Lua interpreter
-Summary(pl.UTF-8):	Statycznie skonsolidowany interpreter lua
-Group:		Development/Languages
-%if %{with default_lua}
-Provides:	lua-luastatic = %{version}
-Obsoletes:	lua-luastatic < %{version}
-%endif
-
-%description luastatic
-Static lua interpreter.
-
-%description luastatic -l pl.UTF-8
-Statycznie skonsolidowany interpreter lua.
-
 %prep
 %setup -q -n lua-%{version}
 %patch -P0 -p1
@@ -116,16 +99,6 @@ sed -i  -e '/#define LUA_ROOT/s,/usr/local/,%{_prefix}/,' \
 	-e '/#define LUA_CDIR/s,lib/lua/,%{_lib}/lua/,' src/luaconf.h
 
 %build
-%if %{with luastatic}
-%{__make} all \
-	PLAT=posix \
-	CC="diet %{__cc}" \
-	CFLAGS="%{rpmcflags} -Wall -fPIC -Os -DPIC -D_GNU_SOURCE -DLUA_USE_POSIX -DLUA_COMPAT_ALL"
-%{__mv} src/lua lua.static
-%{__mv} src/luac luac.static
-%{__make} clean
-%endif
-
 %{__make} -j1 all \
 	PLAT=linux \
 	CC="%{__cc}" \
@@ -136,63 +109,54 @@ rm -rf $RPM_BUILD_ROOT
 
 %{__make} install \
 	INSTALL_TOP=$RPM_BUILD_ROOT%{_prefix} \
-	INSTALL_INC=$RPM_BUILD_ROOT%{_includedir}/lua5.4 \
+	INSTALL_INC=$RPM_BUILD_ROOT%{_includedir}/lua5.5 \
 	INSTALL_LIB=$RPM_BUILD_ROOT%{_libdir} \
 	INSTALL_MAN=$RPM_BUILD_ROOT%{_mandir}/man1 \
-	INSTALL_CMOD=$RPM_BUILD_ROOT%{_libdir}/lua/5.4
+	INSTALL_CMOD=$RPM_BUILD_ROOT%{_libdir}/lua/5.5
 
-# change name from lua to lua5.4
+# change name from lua to lua5.5
 for f in lua luac ; do
-	%{__mv} $RPM_BUILD_ROOT%{_bindir}/${f} $RPM_BUILD_ROOT%{_bindir}/${f}5.4
-	%{__mv} $RPM_BUILD_ROOT%{_mandir}/man1/${f}.1 $RPM_BUILD_ROOT%{_mandir}/man1/${f}5.4.1
+	%{__mv} $RPM_BUILD_ROOT%{_bindir}/${f} $RPM_BUILD_ROOT%{_bindir}/${f}5.5
+	%{__mv} $RPM_BUILD_ROOT%{_mandir}/man1/${f}.1 $RPM_BUILD_ROOT%{_mandir}/man1/${f}5.5.1
 %if %{with default_lua}
-	ln -sf ${f}5.4 $RPM_BUILD_ROOT%{_bindir}/${f}
-	echo ".so ${f}5.4.1" >$RPM_BUILD_ROOT%{_mandir}/man1/${f}.1
+	ln -sf ${f}5.5 $RPM_BUILD_ROOT%{_bindir}/${f}
+	echo ".so ${f}5.5.1" >$RPM_BUILD_ROOT%{_mandir}/man1/${f}.1
 %endif
 done
-%{__mv} $RPM_BUILD_ROOT%{_libdir}/liblua{,5.4}.a
+%{__mv} $RPM_BUILD_ROOT%{_libdir}/liblua{,5.5}.a
 
 # install shared library
 %if %{with default_lua}
 install -d $RPM_BUILD_ROOT/%{_lib}
-install src/liblua.so.5.4 $RPM_BUILD_ROOT/%{_lib}
-ln -sf /%{_lib}/liblua.so.5.4 $RPM_BUILD_ROOT%{_libdir}/liblua5.4.so
+install src/liblua.so.5.5 $RPM_BUILD_ROOT/%{_lib}
+ln -sf /%{_lib}/liblua.so.5.5 $RPM_BUILD_ROOT%{_libdir}/liblua5.5.so
 %else
-install src/liblua.so.5.4 $RPM_BUILD_ROOT%{_libdir}
-ln -sf liblua.so.5.4 $RPM_BUILD_ROOT%{_libdir}/liblua5.4.so
-%endif
-
-%if %{with luastatic}
-install lua.static $RPM_BUILD_ROOT%{_bindir}/lua5.4.static
-install luac.static $RPM_BUILD_ROOT%{_bindir}/luac5.4.static
-%if %{with default_lua}
-ln -sf lua5.4.static $RPM_BUILD_ROOT%{_bindir}/lua.static
-ln -sf luac5.4.static $RPM_BUILD_ROOT%{_bindir}/luac.static
-%endif
+install src/liblua.so.5.5 $RPM_BUILD_ROOT%{_libdir}
+ln -sf liblua.so.5.5 $RPM_BUILD_ROOT%{_libdir}/liblua5.5.so
 %endif
 
 # create pkgconfig file
 install -d $RPM_BUILD_ROOT%{_pkgconfigdir}
-cat > $RPM_BUILD_ROOT%{_pkgconfigdir}/lua5.4.pc <<'EOF'
+cat > $RPM_BUILD_ROOT%{_pkgconfigdir}/lua5.5.pc <<'EOF'
 prefix=%{_prefix}
 exec_prefix=%{_exec_prefix}
-includedir=%{_includedir}/lua5.4
+includedir=%{_includedir}/lua5.5
 libdir=%{_libdir}
-interpreter=%{_bindir}/lua5.4
-compiler=%{_bindir}/luac5.4
+interpreter=%{_bindir}/lua5.5
+compiler=%{_bindir}/luac5.5
 
 Name: Lua
 Description: An extension programming language
 Version: %{version}
 Cflags: -I${includedir}
-Libs: -L${libdir} -llua5.4 -ldl -lm
+Libs: -L${libdir} -llua5.5 -ldl -lm
 EOF
 
 %if %{with default_lua}
-ln -sf /%{_lib}/liblua.so.5.4 $RPM_BUILD_ROOT%{_libdir}/liblua.so
-ln -sf liblua5.4.a $RPM_BUILD_ROOT%{_libdir}/liblua.a
-ln -sf lua5.4 $RPM_BUILD_ROOT%{_includedir}/lua
-ln -sf lua5.4.pc $RPM_BUILD_ROOT%{_pkgconfigdir}/lua.pc
+ln -sf /%{_lib}/liblua.so.5.5 $RPM_BUILD_ROOT%{_libdir}/liblua.so
+ln -sf liblua5.5.a $RPM_BUILD_ROOT%{_libdir}/liblua.a
+ln -sf lua5.5 $RPM_BUILD_ROOT%{_includedir}/lua
+ln -sf lua5.5.pc $RPM_BUILD_ROOT%{_pkgconfigdir}/lua.pc
 %endif
 
 %clean
@@ -203,10 +167,10 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_bindir}/lua5.4
-%attr(755,root,root) %{_bindir}/luac5.4
-%{_mandir}/man1/lua5.4.1*
-%{_mandir}/man1/luac5.4.1*
+%attr(755,root,root) %{_bindir}/lua5.5
+%attr(755,root,root) %{_bindir}/luac5.5
+%{_mandir}/man1/lua5.5.1*
+%{_mandir}/man1/luac5.5.1*
 %if %{with default_lua}
 %attr(755,root,root) %{_bindir}/lua
 %attr(755,root,root) %{_bindir}/luac
@@ -218,41 +182,30 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(644,root,root,755)
 %doc README
 %if %{with default_lua}
-%attr(755,root,root) /%{_lib}/liblua.so.5.4
+/%{_lib}/liblua.so.5.5
 %else
-%attr(755,root,root) %{_libdir}/liblua.so.5.4
+%{_libdir}/liblua.so.5.5
 %endif
 %dir %{_libdir}/lua
-%{_libdir}/lua/5.4
+%{_libdir}/lua/5.5
 %dir %{_datadir}/lua
-%{_datadir}/lua/5.4
+%{_datadir}/lua/5.5
 
 %files devel
 %defattr(644,root,root,755)
-%doc doc/*.{html,css,gif,png}
-%attr(755,root,root) %{_libdir}/liblua5.4.so
-%{_includedir}/lua5.4
-%{_pkgconfigdir}/lua5.4.pc
+%doc doc/*.{html,css,png}
+%{_libdir}/liblua5.5.so
+%{_includedir}/lua5.5
+%{_pkgconfigdir}/lua5.5.pc
 %if %{with default_lua}
-%attr(755,root,root) %{_libdir}/liblua.so
+%{_libdir}/liblua.so
 %{_includedir}/lua
 %{_pkgconfigdir}/lua.pc
 %endif
 
 %files static
 %defattr(644,root,root,755)
-%{_libdir}/liblua5.4.a
+%{_libdir}/liblua5.5.a
 %if %{with default_lua}
 %{_libdir}/liblua.a
-%endif
-
-%if %{with luastatic}
-%files luastatic
-%defattr(644,root,root,755)
-%attr(755,root,root) %{_bindir}/lua5.4.static
-%attr(755,root,root) %{_bindir}/luac5.4.static
-%if %{with default_lua}
-%attr(755,root,root) %{_bindir}/lua.static
-%attr(755,root,root) %{_bindir}/luac.static
-%endif
 %endif
